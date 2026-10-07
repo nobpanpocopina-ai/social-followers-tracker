@@ -1,0 +1,30 @@
+name: Track social followers
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "45 20 * * *" # 05:45 JST
+permissions:
+  contents: write
+jobs:
+  track:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install
+      - run: npx playwright install --with-deps chromium
+      - name: Track followers
+        env:
+          X_STORAGE_STATE_B64: ${{ secrets.X_STORAGE_STATE_B64 }}
+          INSTAGRAM_STORAGE_STATE_B64: ${{ secrets.INSTAGRAM_STORAGE_STATE_B64 }}
+        run: npm start
+      - name: Commit current data
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add current.json
+          git diff --cached --quiet || git commit -m "Update social follower counts"
+          git push
